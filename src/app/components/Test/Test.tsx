@@ -34,12 +34,9 @@ export default function Test({portfolio}: TestProps) {
                             {portfolio.deposits.map((deposit, idx) => (
                                 <tr key={idx} className="hover:bg-[#2c3e5f]">
                                     <td className="px-2 py-1">{deposit.date}</td>
-                                    <td className="px-2 py-1">{deposit.total ? deposit.total.toFixed(2) : "-"}</td>
+                                    <td className="px-2 py-1">{deposit.total ? deposit.total.toFixed(2) : '-'}</td>
                                     <td className="px-2 py-1">{deposit.currency}</td>
                                     <td className="px-2 py-1">
-                                        {/*{deposit.totalPLN !== null && deposit.totalPLN !== undefined*/}
-                                        {/*    ? `${deposit.totalPLN.toFixed(2)} PLN`*/}
-                                        {/*    : "Ошибка конвертации"}*/}
                                         {deposit.totalPLN}
                                     </td>
                                     <td className="px-2 py-1">{deposit.total}</td>
@@ -76,13 +73,10 @@ export default function Test({portfolio}: TestProps) {
                                     <td className="px-2 py-1">{tx.name}</td>
                                     <td className="px-2 py-1">{tx.action}</td>
                                     <td className="px-2 py-1">{tx.shares}</td>
-                                    <td className="px-2 py-1">{tx.price ? tx.price.toFixed(2) : "-"}</td>
-                                    <td className="px-2 py-1">{tx.total ? tx.total.toFixed(2) : "-"}</td>
+                                    <td className="px-2 py-1">{tx.pricePerShare ? tx.pricePerShare.toFixed(2) : '-'}</td>
+                                    <td className="px-2 py-1">{tx.total ? tx.total.toFixed(2) : '-'}</td>
                                     <td className="px-2 py-1">{tx.currency}</td>
                                     <td className="px-2 py-1">
-                                        {/*{tx.totalPLN !== null && tx.totalPLN !== undefined*/}
-                                        {/*    ? `${tx.totalPLN.toFixed(2)} PLN`*/}
-                                        {/*    : "Ошибка конвертации"}*/}
                                         {tx.totalPLN}
                                     </td>
                                 </tr>
@@ -115,18 +109,18 @@ export default function Test({portfolio}: TestProps) {
                                     <td className="px-2 py-1">{div.date}</td>
                                     <td className="px-2 py-1">{div.ticker}</td>
                                     <td className="px-2 py-1">{div.name}</td>
-                                    <td className="px-2 py-1">{div.total ? div.total.toFixed(2) : "-"}</td>
-                                    <td className="px-2 py-1">{div.withholdingTax ? div.withholdingTax.toFixed(2) : "-"}</td>
+                                    <td className="px-2 py-1">{div.total ? div.total.toFixed(2) : '-'}</td>
+                                    <td className="px-2 py-1">{div.withholdingTax ? div.withholdingTax.toFixed(2) : '-'}</td>
                                     <td className="px-2 py-1">{div.currency}</td>
                                     <td className="px-2 py-1">
                                         {div.totalPLN !== null && div.totalPLN !== undefined
                                             ? `${div.totalPLN.toFixed(2)} PLN`
-                                            : "Ошибка конвертации"}
+                                            : 'Ошибка конвертации'}
                                     </td>
                                     <td className="px-2 py-1">
                                         {div.withholdingTaxPLN !== null && div.withholdingTaxPLN !== undefined
                                             ? `${div.withholdingTaxPLN.toFixed(2)} PLN`
-                                            : "Ошибка конвертации"}
+                                            : 'Ошибка конвертации'}
                                     </td>
                                 </tr>
                             ))}

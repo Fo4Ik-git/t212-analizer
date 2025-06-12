@@ -69,15 +69,15 @@ export async function parseCSVData(csvData: string[][], options?: { skipRatesFet
         if (action === ActionType.MARKET_BUY || action === ActionType.MARKET_SELL) {
             transactionPromises.push(parseStockTransactionWithPLN(row, columnMap, options?.skipRatesFetch));
         } else if (DIVIDEND_ACTIONS.includes(action as ActionType)) {
-            dividendPromises.push(parseDividendTransactionWithPLN(row, columnMap, options?.skipRatesFetch));
+            dividendPromises.push(parseDividendTransactionWithPLN(row, columnMap));
         } else if (action === ActionType.DEPOSIT) {
-            depositPromises.push(parseCashTransactionWithPLN(row, columnMap, options?.skipRatesFetch));
+            depositPromises.push(parseCashTransactionWithPLN(row, columnMap));
         } else if (action === ActionType.WITHDRAWAL) {
-            withdrawalPromises.push(parseCashTransactionWithPLN(row, columnMap, options?.skipRatesFetch));
+            withdrawalPromises.push(parseCashTransactionWithPLN(row, columnMap));
         } else if (action === ActionType.INTEREST) {
-            interestPromises.push(parseCashTransactionWithPLN(row, columnMap, options?.skipRatesFetch));
+            interestPromises.push(parseCashTransactionWithPLN(row, columnMap));
         } else if (action === ActionType.CURRENCY_CONVERSION) {
-            conversionPromises.push(parseCurrencyConversionWithPLN(row, columnMap, options?.skipRatesFetch));
+            conversionPromises.push(parseCurrencyConversionWithPLN(row, columnMap));
         }
     }
 
@@ -102,12 +102,12 @@ async function parseStockTransactionWithPLN(row: string[], columnMap: CSVColumnM
         transaction.currency,
         'PLN',
         date,
-        { skipRatesFetch }
+        skipRatesFetch
     );
 
     // Конвертируем fee в PLN если он есть
     const feePLN = transaction.fee
-        ? await convertCurrency(transaction.fee, transaction.currency, 'PLN', date, { skipRatesFetch })
+        ? await convertCurrency(transaction.fee, transaction.currency, 'PLN', date, skipRatesFetch)
         : null;
 
     return {
@@ -168,7 +168,7 @@ async function parseCashTransactionWithPLN(row: string[], columnMap: CSVColumnMa
         cashTransaction.currency,
         'PLN',
         date
-    );
+    ) || -1; // Используем -1 как индикатор ошибки конвертации
 
     // Теперь totalPLN может быть null, если конвертация не удалась
     return {
@@ -222,7 +222,9 @@ function parseStockTransaction(row: string[], columnMap: CSVColumnMap): StockTra
             : undefined,
         fee: getNumberFromRow(row, columnMap, 'Currency conversion fee'),
         total: getNumberFromRow(row, columnMap, 'Total'),
-        currency: getValueFromRow(row, columnMap, 'Currency (Total)')
+        currency: getValueFromRow(row, columnMap, 'Currency (Total)'),
+        totalPLN: 0, // Изначально 0, будет заполнено позже
+        feePLN: 0 // Изначально 0, будет заполнено позже
     };
 }
 
@@ -238,7 +240,9 @@ function parseDividendTransaction(row: string[], columnMap: CSVColumnMap): Divid
         total: getNumberFromRow(row, columnMap, 'Total'),
         currency: getValueFromRow(row, columnMap, 'Currency (Total)'),
         withholdingTax: getNumberFromRow(row, columnMap, 'Withholding tax'),
-        withholdingTaxCurrency: getValueFromRow(row, columnMap, 'Currency (Withholding tax)')
+        withholdingTaxCurrency: getValueFromRow(row, columnMap, 'Currency (Withholding tax)'),
+        totalPLN: 0, // Изначально 0, будет заполнено позже
+        withholdingTaxPLN: 0 // Изначально 0, будет заполнено позже
     };
 }
 
@@ -249,7 +253,8 @@ function parseCashTransaction(row: string[], columnMap: CSVColumnMap): CashTrans
         notes: getValueFromRow(row, columnMap, 'Notes'),
         id: getValueFromRow(row, columnMap, 'ID'),
         total: getNumberFromRow(row, columnMap, 'Total'),
-        currency: getValueFromRow(row, columnMap, 'Currency (Total)')
+        currency: getValueFromRow(row, columnMap, 'Currency (Total)'),
+        totalPLN: 0 // Изначально 0, будет заполнено позже
     };
 }
 
@@ -264,6 +269,10 @@ function parseCurrencyConversion(row: string[], columnMap: CSVColumnMap): Curren
         fee: getNumberFromRow(row, columnMap, 'Currency conversion fee'),
         feeCurrency: getValueFromRow(row, columnMap, 'Currency (Currency conversion fee)'),
         currency: getValueFromRow(row, columnMap, 'To currency'),
-        total: getNumberFromRow(row, columnMap, 'To amount')
+        total: getNumberFromRow(row, columnMap, 'To amount'),
+        totalPLN: 0, // Изначально 0, будет заполнено позже
+        toAmountPLN: 0, // Изначально 0, будет заполнено позже
+        fromAmountPLN: 0, // Изначально 0, будет заполнено позже
+        feePLN: 0, // Изначально 0, будет заполнено позже
     };
 }

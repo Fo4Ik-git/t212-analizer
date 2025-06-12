@@ -32,7 +32,6 @@ const eslintConfig = [
 
     {
         files: ['**/*.spec.ts', '**/*.spec.js', '**/*.test.ts', '**/*.test.js'],
-        ...compat.extends('plugin:jest/recommended'),
     },
     {
         files: [

@@ -2,7 +2,7 @@
 
 import {ReactNode, useEffect} from 'react';
 import {useRouter, usePathname, useSearchParams} from 'next/navigation';
-import Button, {ButtonVariant} from "@/app/components/Button";
+import Button, {ButtonVariant} from '@/app/components/Button';
 export type Tab = {
     id: string;
     label: string;

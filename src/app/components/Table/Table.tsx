@@ -40,7 +40,6 @@ export default function Table({data}: TableProps) {
         }
     };
 
-
     return (
         <div className="w-full">
             <TableSearch

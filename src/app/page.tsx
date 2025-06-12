@@ -1,12 +1,12 @@
 'use client';
 
 import React, {useEffect, useState} from 'react';
-import Table from "@/app/components/Table/Table";
-import TabContainer, {Tab} from "@/app/components/TabContainer";
-import Diagram from "@/app/components/Diagram/Diagram";
-import {Portfolio} from "@/types/trading212";
-import {parseCSVData} from "@/services/dataParser";
-import Test from "@/app/components/Test/Test";
+import Table from '@/app/components/Table/Table';
+import TabContainer, {Tab} from '@/app/components/TabContainer';
+import Diagram from '@/app/components/Diagram/Diagram';
+import {Portfolio} from '@/types/trading212';
+import {parseCSVData} from '@/services/dataParser';
+import Test from '@/app/components/Test/Test';
 
 export default function Home() {
     const [csvData, setCsvData] = useState<string[][]>([]);
@@ -21,7 +21,7 @@ export default function Home() {
                     const parsedPortfolio = await parseCSVData(csvData);
                     setPortfolio(parsedPortfolio);
                 } catch (error) {
-                    console.error("Ошибка при парсинге CSV:", error);
+                    console.error('Ошибка при парсинге CSV:', error);
                 }
             };
 
@@ -33,7 +33,7 @@ export default function Home() {
         // Проверяем наличие флага isAdmin в localStorage при монтировании компонента
         const adminFlag = localStorage.getItem('isAdmin') === 'true';
 
-        console.log("Admin flag from localStorage:", adminFlag);
+        console.log('Admin flag from localStorage:', adminFlag);
 
         setIsAdmin(adminFlag);
     }, []);
@@ -61,7 +61,7 @@ export default function Home() {
                 const parsedPortfolio = await parseCSVData(csvData, { skipRatesFetch: true });
                 setPortfolio(parsedPortfolio);
             } catch (error) {
-                console.error("Ошибка при обновлении данных:", error);
+                console.error('Ошибка при обновлении данных:', error);
             }
         }
     };
@@ -79,7 +79,7 @@ export default function Home() {
             component: <Diagram portfolio={portfolio || undefined}/>,
             className: 'w-full'
         },
-    ]
+    ];
 
     if (isAdmin) {
         tabs.push({

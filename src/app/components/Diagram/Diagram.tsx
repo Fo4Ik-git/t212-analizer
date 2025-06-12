@@ -104,7 +104,6 @@ export default function Diagram({portfolio}: DiagramProps) {
         // Проверяем, все ли депозиты конвертированы в PLN
         const allDepositsConverted = portfolio.deposits.every(deposit => deposit.totalPLN);
 
-
         // Депозиты в PLN
         const deposits = {
             count: portfolio.deposits.length,

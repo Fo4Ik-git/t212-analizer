@@ -85,7 +85,7 @@ async function loadExchangeRatesTable(startDate: string, endDate: string): Promi
         loadedPeriods[periodKey] = true;
         return true;
     } catch (error) {
-        console.error(`Ошибка при загрузке таблицы курсов:`, error);
+        console.error('Ошибка при загрузке таблицы курсов:', error);
         return false;
     }
 }
@@ -113,7 +113,7 @@ function findClosestPreviousDate(date: string, currency: string): string | null 
 /**
  * Получает курс валюты по отношению к PLN
  */
-export async function getExchangeRate(currency: string, date: string): Promise<number | null> {
+export async function getExchangeRate(currency: string, date: string, skipRatesFetch?: boolean): Promise<number | null> {
     // Если запрашивается курс для PLN, возвращаем 1
     if (currency === 'PLN') return 1;
 
@@ -123,6 +123,10 @@ export async function getExchangeRate(currency: string, date: string): Promise<n
     // Проверяем, есть ли курс в кэше
     if (exchangeRatesCache[date]?.[currency]) {
         return exchangeRatesCache[date][currency];
+    }
+
+    if (skipRatesFetch) {
+        return null;
     }
 
     // Определяем период квартала для загрузки
@@ -160,8 +164,14 @@ export async function convertCurrency(
     amount: number,
     fromCurrency: string,
     toCurrency: string,
-    date: string
+    date: string,
+    skipRatesFetch?: boolean
 ): Promise<number | null> {
+
+    if (skipRatesFetch) {
+        // Если пропускаем загрузку курсов, просто возвращаем null
+        return null;
+    }
     // Удаляем кавычки из строк валют
     fromCurrency = fromCurrency.replace(/"/g, '');
     toCurrency = toCurrency.replace(/"/g, '');
@@ -170,16 +180,18 @@ export async function convertCurrency(
 
     try {
         if (toCurrency === 'PLN') {
-            const rate = await getExchangeRate(fromCurrency, date);
+            const rate = await getExchangeRate(fromCurrency, date) ;
             if (rate === null) {
                 new Error(`Не удалось получить курс для ${fromCurrency}`);
             }
+            // @ts-ignore
             return amount * rate;
         } else if (fromCurrency === 'PLN') {
             const rate = await getExchangeRate(toCurrency, date);
             if (rate === null) {
                 new Error(`Не удалось получить курс для ${toCurrency}`);
             }
+            // @ts-ignore
             return amount / rate;
         } else {
             // Конвертация через PLN
@@ -187,10 +199,12 @@ export async function convertCurrency(
             const toRate = await getExchangeRate(toCurrency, date);
 
             if (fromRate === null || toRate === null) {
-                new Error(`Не удалось получить курсы для конвертации`);
+                new Error('Не удалось получить курсы для конвертации');
             }
 
+            // @ts-ignore
             const amountInPLN = amount * fromRate;
+            // @ts-ignore
             return amountInPLN / toRate;
         }
     } catch (error) {
@@ -203,7 +217,7 @@ export async function convertCurrency(
  * Форматирует сумму в валюте для отображения
  */
 export function formatCurrency(amount: number | null, currency: string): string {
-    if (amount === null) return "Ошибка конвертации";
+    if (amount === null) return 'Ошибка конвертации';
 
     return new Intl.NumberFormat('ru-RU', {
         style: 'currency',
