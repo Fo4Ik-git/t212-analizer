@@ -43,6 +43,7 @@ export default function Home() {
                 };
 
                 // Массив для всех CSV-данных для отображения в таблице
+                const allCsvData: string[][] = [];
                 let headerRow: string[] | null = null;
 
                 // Обрабатываем каждый год и файл отдельно
