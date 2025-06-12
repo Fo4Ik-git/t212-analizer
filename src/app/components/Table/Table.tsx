@@ -16,7 +16,6 @@ export default function Table({data}: TableProps) {
         paginatedData,
         searchTerm,
         setSearchTerm,
-        setFilters,
         sortConfig,
         setSortConfig,
         currentPage,

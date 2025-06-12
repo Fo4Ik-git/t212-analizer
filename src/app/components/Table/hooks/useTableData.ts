@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { SortConfig, TableDataHook } from '../types';
 
 export default function useTableData(data: string[][]): TableDataHook {
-    const headers = data[0] || [];
     const tableData = useMemo(() => data.slice(1), [data]);
 
     const [filteredData, setFilteredData] = useState<string[][]>([]);
