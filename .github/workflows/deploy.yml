@@ -29,3 +29,4 @@ jobs:
         with:
           folder: build # или dist, в зависимости от вашей конфигурации
           branch: gh-pages
+          token: '${{ github.GITHUB_TOKEN }}'
