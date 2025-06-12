@@ -1,7 +1,8 @@
 {
   "name": "t212-analizer",
+  "homepage": "https://fo4ik-git.github.io/t212-analizer",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
