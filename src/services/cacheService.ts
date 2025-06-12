@@ -7,7 +7,7 @@ interface CacheMetadata {
 }
 
 class CacheService {
-    private readonly defaultTTL = CACHE_TTL
+    private readonly defaultTTL = CACHE_TTL;
 
     /**
      * Сохраняет данные в localStorage с метаданными

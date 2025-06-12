@@ -41,6 +41,34 @@ export default function Diagram({portfolio}: DiagramProps) {
         dividends: {count: 0, total: 0, currency: 'PLN'},
         interestInCash: {count: 0, total: 0, currency: 'PLN'}
     });
+    const [dialogData, setDialogData] = useState<{
+        isOpen: boolean;
+        type: 'deposits' | 'purchases' | 'sales' | 'dividends' | null;
+        title: string;
+    }>({
+        isOpen: false,
+        type: null,
+        title: ''
+    });
+    // Функция для открытия диалога
+    const openDialog = (type: 'deposits' | 'purchases' | 'sales' | 'dividends') => {
+        const titles = {
+            deposits: 'Детали депозитов',
+            purchases: 'Детали покупок акций',
+            sales: 'Детали продаж акций',
+            dividends: 'Детали дивидендов'
+        };
+
+        setDialogData({
+            isOpen: true,
+            type,
+            title: titles[type]
+        });
+    };
+
+    const closeDialog = () => {
+        setDialogData(prev => ({...prev, isOpen: false}));
+    };
 
     useEffect(() => {
         if (!portfolio) return;
@@ -169,22 +197,22 @@ export default function Diagram({portfolio}: DiagramProps) {
             <div className="bg-primary p-4 rounded-lg shadow">
                 <h2 className="text-xl font-bold mb-4">Сводка</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-[#243454] p-3 rounded">
+                    <div className="bg-secondary p-3 rounded">
                         <h3 className="font-semibold">Депозиты</h3>
                         <p>Количество: {stats.deposits.count}</p>
                         <p>Сумма: {stats.deposits.total.toFixed(2)} {stats.deposits.currency}</p>
                     </div>
-                    <div className="bg-[#243454] p-3 rounded">
+                    <div className="bg-secondary p-3 rounded">
                         <h3 className="font-semibold">Покупки акций</h3>
                         <p>Количество: {stats.purchases.count}</p>
                         <p>Сумма: {stats.purchases.total.toFixed(2)} PLN</p>
                     </div>
-                    <div className="bg-[#243454] p-3 rounded">
+                    <div className="bg-secondary p-3 rounded">
                         <h3 className="font-semibold">Продажи акций</h3>
                         <p>Количество: {stats.sales.count}</p>
                         <p>Сумма: {stats.sales.total.toFixed(2)} PLN</p>
                     </div>
-                    <div className="bg-[#243454] p-3 rounded">
+                    <div className="bg-secondary p-3 rounded">
                         <h3 className="font-semibold">Дивиденды</h3>
                         <p>Количество: {stats.dividends.count}</p>
                         <p>Сумма: {stats.dividends.total.toFixed(2)} PLN</p>

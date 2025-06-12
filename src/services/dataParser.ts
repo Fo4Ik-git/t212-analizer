@@ -29,7 +29,10 @@ function getNumberFromRow(row: string[], columnMap: CSVColumnMap, columnName: st
     return parseFloat(value) || 0;
 }
 
-export async function parseCSVData(csvData: string[][], options?: { skipRatesFetch?: boolean }): Promise<Portfolio> {
+export async function parseCSVData(csvData: string[][], options?: {
+    skipRatesFetch?: boolean,
+    handleFutureRates?: boolean
+}): Promise<Portfolio> {
     if (csvData.length < 1) return {
         transactions: [],
         dividends: [],
@@ -51,9 +54,16 @@ export async function parseCSVData(csvData: string[][], options?: { skipRatesFet
     const interestPromises: Promise<CashTransaction>[] = [];
     const conversionPromises: Promise<CurrencyConversion>[] = [];
 
+    // Проверяем на будущие даты
+    const currentDate = new Date();
+
     // Пропускаем заголовок
     const rows = csvData.slice(1);
 
+    // Фильтруем ошибочные строки
+    const validRows = rows.filter(row => row.length >= 3);
+
+    // Настраиваем обработку
     const portfolio: Portfolio = {
         transactions: [],
         dividends: [],
@@ -63,31 +73,35 @@ export async function parseCSVData(csvData: string[][], options?: { skipRatesFet
         conversions: []
     };
 
-    for (const row of rows) {
-        const action = getValueFromRow(row, columnMap, 'Action') || '';
+    for (const row of validRows) {
+        try {
+            const action = getValueFromRow(row, columnMap, 'Action') || '';
 
-        if (action === ActionType.MARKET_BUY || action === ActionType.MARKET_SELL) {
-            transactionPromises.push(parseStockTransactionWithPLN(row, columnMap, options?.skipRatesFetch));
-        } else if (DIVIDEND_ACTIONS.includes(action as ActionType)) {
-            dividendPromises.push(parseDividendTransactionWithPLN(row, columnMap));
-        } else if (action === ActionType.DEPOSIT) {
-            depositPromises.push(parseCashTransactionWithPLN(row, columnMap));
-        } else if (action === ActionType.WITHDRAWAL) {
-            withdrawalPromises.push(parseCashTransactionWithPLN(row, columnMap));
-        } else if (action === ActionType.INTEREST) {
-            interestPromises.push(parseCashTransactionWithPLN(row, columnMap));
-        } else if (action === ActionType.CURRENCY_CONVERSION) {
-            conversionPromises.push(parseCurrencyConversionWithPLN(row, columnMap));
+            if (action === ActionType.MARKET_BUY || action === ActionType.MARKET_SELL) {
+                transactionPromises.push(parseStockTransactionWithPLN(row, columnMap, options?.skipRatesFetch));
+            } else if (DIVIDEND_ACTIONS.includes(action as ActionType)) {
+                dividendPromises.push(parseDividendTransactionWithPLN(row, columnMap));
+            } else if (action === ActionType.DEPOSIT) {
+                depositPromises.push(parseCashTransactionWithPLN(row, columnMap));
+            } else if (action === ActionType.WITHDRAWAL) {
+                withdrawalPromises.push(parseCashTransactionWithPLN(row, columnMap));
+            } else if (action === ActionType.INTEREST) {
+                interestPromises.push(parseCashTransactionWithPLN(row, columnMap));
+            } else if (action === ActionType.CURRENCY_CONVERSION) {
+                conversionPromises.push(parseCurrencyConversionWithPLN(row, columnMap));
+            }
+        } catch (error) {
+            console.warn('Ошибка при обработке строки:', error);
         }
     }
 
     // Ожидаем выполнения всех промисов
-    portfolio.transactions = await Promise.all(transactionPromises);
-    portfolio.dividends = await Promise.all(dividendPromises);
-    portfolio.deposits = await Promise.all(depositPromises);
-    portfolio.withdrawals = await Promise.all(withdrawalPromises);
-    portfolio.interest = await Promise.all(interestPromises);
-    portfolio.conversions = await Promise.all(conversionPromises);
+    portfolio.transactions = (await Promise.all(transactionPromises)).filter(Boolean);
+    portfolio.dividends = (await Promise.all(dividendPromises)).filter(Boolean);
+    portfolio.deposits = (await Promise.all(depositPromises)).filter(Boolean);
+    portfolio.withdrawals = (await Promise.all(withdrawalPromises)).filter(Boolean);
+    portfolio.interest = (await Promise.all(interestPromises)).filter(Boolean);
+    portfolio.conversions = (await Promise.all(conversionPromises)).filter(Boolean);
 
     return portfolio;
 }
@@ -121,19 +135,44 @@ async function parseDividendTransactionWithPLN(row: string[], columnMap: CSVColu
     const dividend = parseDividendTransaction(row, columnMap);
     const date = dividend.date.split(' ')[0];
 
+    // Проверяем, что у нас правильная валюта
+    const currency = dividend.currency;
+
+    // Проверка валюты на корректность
+    if (!currency || typeof currency !== 'string' || currency.trim() === '') {
+        console.warn(`Некорректная валюта для дивиденда на дату ${date}. Используем значение без конвертации.`);
+        return {
+            ...dividend,
+            totalPLN: dividend.total,
+            withholdingTaxPLN: dividend.withholdingTax || 0
+        };
+    }
+
+    // Если валюта уже PLN, не конвертируем
+    if (currency === 'PLN') {
+        return {
+            ...dividend,
+            totalPLN: dividend.total,
+            withholdingTaxPLN: dividend.withholdingTax || 0
+        };
+    }
+
     // Конвертируем total в PLN
     const totalPLN = await convertCurrency(
         dividend.total,
-        dividend.currency,
+        currency,
         'PLN',
         date
     );
+
+    // Определяем валюту налога с учетом возможных отсутствующих данных
+    const taxCurrency = dividend.withholdingTaxCurrency || currency;
 
     // Конвертируем withholdingTax в PLN
     const withholdingTaxPLN = dividend.withholdingTax
         ? await convertCurrency(
             dividend.withholdingTax,
-            dividend.withholdingTaxCurrency || dividend.currency,
+            taxCurrency,
             'PLN',
             date
         )
@@ -153,12 +192,21 @@ async function parseCashTransactionWithPLN(row: string[], columnMap: CSVColumnMa
     // Очищаем валюту от кавычек
     cashTransaction.currency = cashTransaction.currency.replace(/"/g, '');
 
+    // Проверка валюты на корректность
+    if (!cashTransaction.currency || typeof cashTransaction.currency !== 'string' || cashTransaction.currency.trim() === '') {
+        console.warn(`Некорректная валюта для кассовой операции на дату ${date}. Используем значение без конвертации.`);
+        return {
+            ...cashTransaction,
+            totalPLN: cashTransaction.total,
+            currency: cashTransaction.currency || 'UNKNOWN'
+        };
+    }
+
     // Если валюта уже PLN, не конвертируем
     if (cashTransaction.currency === 'PLN') {
         return {
             ...cashTransaction,
-            totalPLN: cashTransaction.total,
-            currency: 'PLN'
+            totalPLN: cashTransaction.total
         };
     }
 
@@ -168,12 +216,11 @@ async function parseCashTransactionWithPLN(row: string[], columnMap: CSVColumnMa
         cashTransaction.currency,
         'PLN',
         date
-    ) || -1; // Используем -1 как индикатор ошибки конвертации
+    );
 
-    // Теперь totalPLN может быть null, если конвертация не удалась
     return {
         ...cashTransaction,
-        totalPLN, // Может быть null, что означает ошибку конвертации
+        totalPLN: totalPLN || cashTransaction.total
     };
 }
 
