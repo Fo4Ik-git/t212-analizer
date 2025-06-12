@@ -1,11 +1,13 @@
 // Метаданные кеша для контроля срока жизни
+import {CACHE_TTL} from '@/config/config';
+
 interface CacheMetadata {
     lastUpdated: number; // timestamp последнего обновления
     version: string;     // версия структуры кеша
 }
 
 class CacheService {
-    private readonly defaultTTL = 7 * 24 * 60 * 60 * 1000; // 7 дней в миллисекундах
+    private readonly defaultTTL = CACHE_TTL
 
     /**
      * Сохраняет данные в localStorage с метаданными
