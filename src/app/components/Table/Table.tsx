@@ -28,14 +28,16 @@ export default function Table({data}: TableProps) {
 
     // Обработчик сортировки
     const handleSort = (columnIndex: number) => {
-        setSortConfig(prevSortConfig => {
-            if (prevSortConfig && prevSortConfig.key === columnIndex) {
-                return prevSortConfig.direction === 'asc'
-                    ? {key: columnIndex, direction: 'desc'}
-                    : {key: columnIndex, direction: 'asc'};
-            }
-            return {key: columnIndex, direction: 'asc'};
-        });
+        // Вычисляем новое значение напрямую вместо использования функции обновления
+        if (sortConfig && sortConfig.key === columnIndex) {
+            setSortConfig(
+                sortConfig.direction === 'asc'
+                    ? {key: columnIndex, direction: 'desc' as const}
+                    : {key: columnIndex, direction: 'asc' as const}
+            );
+        } else {
+            setSortConfig({key: columnIndex, direction: 'asc' as const});
+        }
     };
 
 
