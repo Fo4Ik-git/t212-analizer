@@ -1,4 +1,7 @@
 // Кэш для хранения курсов валют
+import {cacheService} from '@/services/cacheService';
+import {CACHE_VERSION, PERIODS_CACHE_KEY, RATES_CACHE_KEY} from '@/config/config';
+
 interface ExchangeRatesCache {
     [date: string]: {
         [currency: string]: number;
@@ -10,8 +13,9 @@ interface LoadedPeriods {
     [periodKey: string]: boolean;
 }
 
-const exchangeRatesCache: ExchangeRatesCache = {};
-const loadedPeriods: LoadedPeriods = {};
+// Инициализация кеша из localStorage или создание нового
+const exchangeRatesCache: ExchangeRatesCache = cacheService.loadData(RATES_CACHE_KEY, CACHE_VERSION) || {};
+const loadedPeriods: LoadedPeriods = cacheService.loadData(PERIODS_CACHE_KEY, CACHE_VERSION) || {};
 
 /**
  * Создает ключ периода для отслеживания загруженных данных
@@ -41,6 +45,14 @@ function getQuarterDates(date: Date): { startDate: string, endDate: string } {
         startDate: formatDate(startDate),
         endDate: formatDate(currentDate)
     };
+}
+
+/**
+ * Сохраняет кеш в localStorage
+ */
+function persistCache(): void {
+    cacheService.saveData(RATES_CACHE_KEY, exchangeRatesCache, CACHE_VERSION);
+    cacheService.saveData(PERIODS_CACHE_KEY, loadedPeriods, CACHE_VERSION);
 }
 
 /**
@@ -83,6 +95,9 @@ async function loadExchangeRatesTable(startDate: string, endDate: string): Promi
 
         // Отмечаем период как загруженный
         loadedPeriods[periodKey] = true;
+
+        // Сохраняем обновленный кеш
+        persistCache();
         return true;
     } catch (error) {
         console.error('Ошибка при загрузке таблицы курсов:', error);
@@ -180,7 +195,7 @@ export async function convertCurrency(
 
     try {
         if (toCurrency === 'PLN') {
-            const rate = await getExchangeRate(fromCurrency, date) ;
+            const rate = await getExchangeRate(fromCurrency, date);
             if (rate === null) {
                 new Error(`Не удалось получить курс для ${fromCurrency}`);
             }
