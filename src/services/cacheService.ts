@@ -10,9 +10,17 @@ class CacheService {
     private readonly defaultTTL = CACHE_TTL;
 
     /**
+     * Проверяет доступность localStorage
+     */
+    private isLocalStorageAvailable(): boolean {
+        return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+    }
+
+    /**
      * Сохраняет данные в localStorage с метаданными
      */
     saveData<T>(key: string, data: T, version: string, ttl?: number): void {
+        if (!this.isLocalStorageAvailable()) return;
         try {
             // Сохраняем сами данные
             localStorage.setItem(key, JSON.stringify(data));
@@ -32,6 +40,7 @@ class CacheService {
      * Загружает данные из localStorage
      */
     loadData<T>(key: string, version: string, ttl?: number): T | null {
+        if (!this.isLocalStorageAvailable()) return;
         try {
             // Проверяем валидность кеша
             if (!this.isValid(key, version, ttl)) {
@@ -53,6 +62,8 @@ class CacheService {
      * Проверяет актуальность кеша
      */
     isValid(key: string, version: string, ttl?: number): boolean {
+        if (!this.isLocalStorageAvailable()) return;
+
         const metadataKey = `${key}_metadata`;
         const metadataStr = localStorage.getItem(metadataKey);
 
@@ -76,6 +87,8 @@ class CacheService {
      * Очищает кеш и его метаданные
      */
     clearCache(key: string): void {
+        if (!this.isLocalStorageAvailable()) return;
+
         localStorage.removeItem(key);
         localStorage.removeItem(`${key}_metadata`);
     }
