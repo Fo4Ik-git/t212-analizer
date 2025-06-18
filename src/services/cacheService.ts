@@ -40,7 +40,7 @@ class CacheService {
      * Загружает данные из localStorage
      */
     loadData<T>(key: string, version: string, ttl?: number): T | null {
-        if (!this.isLocalStorageAvailable()) return;
+        if (!this.isLocalStorageAvailable()) return null;
         try {
             // Проверяем валидность кеша
             if (!this.isValid(key, version, ttl)) {
@@ -62,7 +62,7 @@ class CacheService {
      * Проверяет актуальность кеша
      */
     isValid(key: string, version: string, ttl?: number): boolean {
-        if (!this.isLocalStorageAvailable()) return;
+        if (!this.isLocalStorageAvailable()) return false;
 
         const metadataKey = `${key}_metadata`;
         const metadataStr = localStorage.getItem(metadataKey);
