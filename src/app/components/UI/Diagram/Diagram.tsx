@@ -5,7 +5,6 @@ import {
 } from 'recharts';
 import {Portfolio} from '@/types/trading212';
 import {ActionType} from '@/types/trading212';
-import {formatCurrency} from '@/services/currencyService';
 
 interface DiagramProps {
     portfolio?: Portfolio;

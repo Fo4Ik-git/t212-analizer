@@ -1,4 +1,4 @@
-import {useState, useCallback} from 'react';
+import {useState, useCallback, useEffect} from 'react';
 
 export interface FileData {
     name: string;
@@ -109,6 +109,49 @@ export function useFileUpload() {
         // Обновляем данные
         return combineAllFilesByYear(updatedFilesByYear);
     }, [filesByYear, combineAllFilesByYear]);
+
+    const saveToLocalStorage = useCallback(() => {
+        try {
+            // Сохраняем базовые метаданные файлов без полных данных
+            const metadataToSave = Object.keys(filesByYear).reduce((acc, year) => {
+                acc[year] = filesByYear[year].map(file => ({
+                    name: file.name,
+                    data: file.data
+                }));
+                return acc;
+            }, {} as FilesByYear);
+
+            localStorage.setItem(CACHE_KEYS.FILES_BY_YEAR, JSON.stringify(metadataToSave));
+            localStorage.setItem(CACHE_KEYS.COMBINED_DATA, JSON.stringify(combinedData));
+            localStorage.setItem(CACHE_KEYS.SELECTED_YEAR, selectedYear);
+        } catch (error) {
+            console.error('Error while saving data to LocalStorage:', error);
+        }
+    }, [filesByYear, combinedData, selectedYear]);
+
+    useEffect(() => {
+        try {
+            const savedFilesByYear = localStorage.getItem(CACHE_KEYS.FILES_BY_YEAR);
+            const savedCombinedData = localStorage.getItem(CACHE_KEYS.COMBINED_DATA);
+            const savedSelectedYear = localStorage.getItem(CACHE_KEYS.SELECTED_YEAR);
+
+            if (savedFilesByYear) {
+                setFilesByYear(JSON.parse(savedFilesByYear));
+            }
+            if (savedCombinedData) {
+                setCombinedData(JSON.parse(savedCombinedData));
+            }
+            if (savedSelectedYear) {
+                setSelectedYear(savedSelectedYear);
+            }
+        } catch (error) {
+            console.error('Error lo load data from localStorage:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        saveToLocalStorage();
+    }, [filesByYear, combinedData, selectedYear, saveToLocalStorage]);
 
     return {
         filesByYear,

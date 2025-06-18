@@ -1,6 +1,6 @@
 import React from 'react';
 import {Portfolio} from '@/types/trading212';
-import {formatCurrency} from '@/services/currencyService';
+import AppExpanded from '@/app/components/App/AppExpanded/AppExpanded';
 
 interface TestProps {
     portfolio?: Portfolio;
@@ -18,8 +18,7 @@ export default function Test({portfolio}: TestProps) {
 
                 <div className="space-y-6">
                     {/* Депозиты */}
-                    <section>
-                        <h2 className="text-lg font-semibold mb-2">Депозиты ({portfolio.deposits.length})</h2>
+                    <AppExpanded title={`Депозиты (${portfolio.deposits.length})`}>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-700">
                                 <thead>
@@ -46,11 +45,10 @@ export default function Test({portfolio}: TestProps) {
                                 </tbody>
                             </table>
                         </div>
-                    </section>
+                    </AppExpanded>
 
                     {/* Транзакции */}
-                    <section>
-                        <h2 className="text-lg font-semibold mb-2">Транзакции ({portfolio.transactions.length})</h2>
+                    <AppExpanded title={`Транзакции (${portfolio.transactions.length})`}>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-700">
                                 <thead>
@@ -85,11 +83,10 @@ export default function Test({portfolio}: TestProps) {
                                 </tbody>
                             </table>
                         </div>
-                    </section>
+                    </AppExpanded>
 
                     {/* Дивиденды */}
-                    <section>
-                        <h2 className="text-lg font-semibold mb-2">Дивиденды ({portfolio.dividends.length})</h2>
+                    <AppExpanded title={`Дивиденды (${portfolio.dividends.length})`}>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-700">
                                 <thead>
@@ -128,7 +125,43 @@ export default function Test({portfolio}: TestProps) {
                                 </tbody>
                             </table>
                         </div>
-                    </section>
+                    </AppExpanded>
+
+                    {/* Проценты по неинвестированным средствам */}
+                    <AppExpanded title={`Проценты по неинвестированным средствам (${portfolio.interest?.length || 0})`}>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-700">
+                                <thead>
+                                <tr>
+                                    <th className="px-2 py-1 text-left">Дата</th>
+                                    <th className="px-2 py-1 text-left">Действие</th>
+                                    <th className="px-2 py-1 text-left">Сумма</th>
+                                    <th className="px-2 py-1 text-left">Валюта</th>
+                                    <th className="px-2 py-1 text-left">Сумма в PLN</th>
+                                    <th className="px-2 py-1 text-left">Примечания</th>
+                                    <th className="px-2 py-1 text-left">ID</th>
+                                </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-700">
+                                {portfolio.interest && portfolio.interest.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-[#2c3e5f]">
+                                        <td className="px-2 py-1">{item.date}</td>
+                                        <td className="px-2 py-1">{item.action}</td>
+                                        <td className="px-2 py-1">{item.total ? item.total.toFixed(2) : '-'}</td>
+                                        <td className="px-2 py-1">{item.currency}</td>
+                                        <td className="px-2 py-1">
+                                            {item.totalPLN !== null && item.totalPLN !== undefined
+                                                ? `${item.totalPLN.toFixed(2)} PLN`
+                                                : 'Ошибка конвертации'}
+                                        </td>
+                                        <td className="px-2 py-1">{item.notes || '-'}</td>
+                                        <td className="px-2 py-1">{item.id || '-'}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </AppExpanded>
                 </div>
             </div>
 

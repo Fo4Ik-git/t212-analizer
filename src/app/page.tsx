@@ -1,12 +1,13 @@
 'use client';
 
 import React, {useEffect, useState} from 'react';
+import {CACHE_KEYS} from '@/config/config';
 import Table from '@/app/components/Table/Table';
 import TabContainer, {Tab} from '@/app/components/TabContainer';
-import Diagram from '@/app/components/Diagram/Diagram';
+import Diagram from '@/app/components/UI/Diagram/Diagram';
 import {Portfolio} from '@/types/trading212';
 import {parseCSVData} from '@/services/dataParser';
-import Test from '@/app/components/Test/Test';
+import Test from '@/app/components/UI/Test/Test';
 import {useFileUpload} from '@/hooks/useFileUpload';
 
 export default function Home() {
@@ -19,100 +20,119 @@ export default function Home() {
         filesByYear,
         selectedYear,
         setSelectedYear,
-        availableYears,
         combinedData,
         handleFileUpload,
         removeFile
     } = useFileUpload();
 
-    const processData = async () => {
-        if (Object.keys(filesByYear).length > 0) {
+    // Загрузка данных из localStorage при инициализации
+    useEffect(() => {
+        try {
+            // Загрузка флага администратора
+            const adminFlag = localStorage.getItem('isAdmin') === 'true';
+            setIsAdmin(adminFlag);
+
+            // Загрузка обработанных данных
+            const savedCsvData = localStorage.getItem(CACHE_KEYS.CSV_DATA);
+            const savedPortfolio = localStorage.getItem(CACHE_KEYS.PORTFOLIO);
+            const savedIsDataProcessed = localStorage.getItem(CACHE_KEYS.IS_DATA_PROCESSED);
+
+            if (savedCsvData) {
+                setCsvData(JSON.parse(savedCsvData));
+            }
+            if (savedPortfolio) {
+                setPortfolio(JSON.parse(savedPortfolio));
+            }
+            if (savedIsDataProcessed === 'true') {
+                setIsDataProcessed(true);
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке данных:', error);
+        }
+    }, []);
+
+    // Сохранение обработанных данных при их изменении
+    useEffect(() => {
+        if (isDataProcessed) {
             try {
-                // Сортируем годы от старых к новым
-                const years = Object.keys(filesByYear).sort((a, b) => parseInt(a) - parseInt(b));
-                console.log('Обрабатываемые годы:', years);
+                localStorage.setItem(CACHE_KEYS.CSV_DATA, JSON.stringify(csvData));
+                localStorage.setItem(CACHE_KEYS.PORTFOLIO, JSON.stringify(portfolio));
+                localStorage.setItem(CACHE_KEYS.IS_DATA_PROCESSED, String(isDataProcessed));
+            } catch (error) {
+                console.error('Ошибка при сохранении данных:', error);
+            }
+        }
+    }, [csvData, portfolio, isDataProcessed]);
 
-                // Создаем пустой портфель для объединения результатов
-                const combinedPortfolio: Portfolio = {
-                    transactions: [],
-                    dividends: [],
-                    deposits: [],
-                    withdrawals: [],
-                    interest: [],
-                    conversions: []
-                };
+    // Обработка данных из файлов
+    const processData = async () => {
+        if (Object.keys(filesByYear).length === 0) return;
 
-                // Массив для всех CSV-данных для отображения в таблице
-                const allCsvData: string[][] = [];
-                let headerRow: string[] | null = null;
+        try {
+            // Сортируем годы от старых к новым
+            const years = Object.keys(filesByYear).sort();
 
-                // Обрабатываем каждый год и файл отдельно
-                for (const year of years) {
-                    const filesForYear = filesByYear[year];
-                    console.log(`Обработка ${filesForYear.length} файлов за ${year} год`);
+            // Создаем пустой портфель для объединения результатов
+            const combinedPortfolio: Portfolio = {
+                transactions: [],
+                dividends: [],
+                deposits: [],
+                withdrawals: [],
+                interest: [],
+                conversions: []
+            };
 
-                    for (const file of filesForYear) {
-                        // Проверяем наличие данных
-                        if (!file.data || file.data.length === 0) {
-                            console.warn(`Файл ${file.name} не содержит данных`);
-                            continue;
-                        }
+            // Массив для всех CSV-данных
+            const allCsvData: string[][] = [];
+            let headerRow: string[] | null = null;
 
-                        // Сохраняем заголовок для таблицы
-                        if (!headerRow && file.data[0]) {
-                            headerRow = [...file.data[0]];
-                            allCsvData.push(headerRow);
-                        }
+            // Обрабатываем каждый год и файл
+            for (const year of years) {
+                for (const file of filesByYear[year]) {
+                    if (!file.data || file.data.length === 0) continue;
 
-                        try {
-                            // Обрабатываем каждый файл отдельно
-                            const filePortfolio = await parseCSVData(file.data, {
-                                skipRatesFetch: false,
-                                handleFutureRates: true
-                            });
+                    // Сохраняем заголовок для таблицы
+                    if (!headerRow && file.data[0]) {
+                        headerRow = [...file.data[0]];
+                        allCsvData.push(headerRow);
+                    }
 
-                            // Объединяем результаты
-                            combinedPortfolio.transactions.push(...filePortfolio.transactions);
-                            combinedPortfolio.dividends.push(...filePortfolio.dividends);
-                            combinedPortfolio.deposits.push(...filePortfolio.deposits);
-                            combinedPortfolio.withdrawals.push(...filePortfolio.withdrawals);
-                            combinedPortfolio.interest.push(...filePortfolio.interest);
-                            combinedPortfolio.conversions.push(...filePortfolio.conversions);
+                    try {
+                        // Обрабатываем файл
+                        const filePortfolio = await parseCSVData(file.data, {
+                            skipRatesFetch: false,
+                            handleFutureRates: true
+                        });
 
-                            // Добавляем данные (кроме заголовка) для таблицы
-                            if (file.data.length > 1) {
-                                allCsvData.push(...file.data.slice(1).map(row => [...row]));
+                        // Объединяем результаты
+                        Object.keys(filePortfolio).forEach(key => {
+                            if (Array.isArray(combinedPortfolio[key]) && Array.isArray(filePortfolio[key])) {
+                                combinedPortfolio[key].push(...filePortfolio[key]);
                             }
-                        } catch (fileError) {
-                            console.error(`Ошибка при обработке файла ${file.name}:`, fileError);
+                        });
+
+                        // Добавляем данные для таблицы
+                        if (file.data.length > 1) {
+                            allCsvData.push(...file.data.slice(1));
                         }
+                    } catch (error) {
+                        console.error(`Ошибка при обработке файла ${file.name}:`, error);
                     }
                 }
-
-                // Проверяем, что есть данные после обработки
-                if (combinedPortfolio.transactions.length > 0 ||
-                    combinedPortfolio.dividends.length > 0 ||
-                    combinedPortfolio.deposits.length > 0) {
-
-                    setPortfolio(combinedPortfolio);
-                    setCsvData(allCsvData);
-                    setIsDataProcessed(true);
-                    console.log('Данные успешно обработаны и объединены');
-                } else {
-                    console.warn('После обработки нет данных для отображения');
-                }
-            } catch (error) {
-                console.error('Ошибка при обработке данных:', error);
             }
+
+            // Проверяем наличие данных
+            if (allCsvData.length > 1) {
+                setPortfolio(combinedPortfolio);
+                setCsvData(allCsvData);
+                setIsDataProcessed(true);
+            }
+        } catch (error) {
+            console.error('Ошибка при обработке данных:', error);
         }
     };
 
-    useEffect(() => {
-        const adminFlag = localStorage.getItem('isAdmin') === 'true';
-        console.log('Admin flag from localStorage:', adminFlag);
-        setIsAdmin(adminFlag);
-    }, []);
-
+    // Обновление данных без запроса курсов валют
     const handleRefreshData = async () => {
         if (csvData.length > 0) {
             try {
@@ -124,6 +144,22 @@ export default function Home() {
         }
     };
 
+    // Очистка всех данных из localStorage
+    const clearAllData = () => {
+        try {
+            // Очистка всех ключей
+            Object.values(CACHE_KEYS).forEach(key => {
+                localStorage.removeItem(key);
+            });
+
+            // Перезагрузка страницы
+            window.location.reload();
+        } catch (error) {
+            console.error('Ошибка при очистке данных:', error);
+        }
+    };
+
+    // Определение вкладок
     const tabs: Tab[] = [
         {
             id: 'table',
@@ -168,12 +204,12 @@ export default function Home() {
                                 const currentYear = new Date().getFullYear();
                                 const initialYears = [...Array(5)].map((_, i) => (currentYear - i).toString());
 
-                                // Фильтруем годы - оставляем только те, которые не заняты или являются текущим выбранным
+                                // Фильтруем годы - оставляем только те, которые не заняты или текущий выбранный
                                 const availableYears = initialYears.filter(year =>
                                     !Object.keys(filesByYear).includes(year) || year === selectedYear
                                 );
 
-                                // Если после фильтрации годов меньше 5, добавляем более старые годы
+                                // Добавляем более старые годы если нужно
                                 let additionalYear = currentYear - 5;
                                 while (availableYears.length < 5) {
                                     const yearStr = additionalYear.toString();
@@ -183,10 +219,9 @@ export default function Home() {
                                     additionalYear--;
                                 }
 
-                                // Сортируем годы по убыванию (от новых к старым)
+                                // Сортируем годы по убыванию
                                 availableYears.sort((a, b) => parseInt(b) - parseInt(a));
 
-                                // Отображаем все доступные годы
                                 return availableYears.map(year => (
                                     <option key={year} value={year}>
                                         {year} {Object.keys(filesByYear).includes(year) ? '(есть файлы)' : ''}
@@ -213,7 +248,7 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Список загруженных файлов по годам */}
+                {/* Список загруженных файлов */}
                 {Object.keys(filesByYear).length > 0 && (
                     <div className="mt-4">
                         <h3 className="font-bold">Загруженные файлы:</h3>
@@ -241,23 +276,35 @@ export default function Home() {
                     </div>
                 )}
 
-                {Object.keys(filesByYear).length > 0 && (
-                    <button
-                        onClick={processData}
-                        className="px-4 py-2 bg-green-500 text-white rounded cursor-pointer hover:bg-green-600 mt-4 mr-2"
-                    >
-                        Подсчитать данные
-                    </button>
-                )}
+                {/* Кнопки управления */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                    {Object.keys(filesByYear).length > 0 && (
+                        <button
+                            onClick={processData}
+                            className="px-4 py-2 bg-green-500 text-white rounded cursor-pointer hover:bg-green-600"
+                        >
+                            Подсчитать данные
+                        </button>
+                    )}
 
-                {isDataProcessed && (
-                    <button
-                        onClick={handleRefreshData}
-                        className="px-4 py-2 bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600 mt-4"
-                    >
-                        Обновить данные
-                    </button>
-                )}
+                    {isDataProcessed && (
+                        <button
+                            onClick={handleRefreshData}
+                            className="px-4 py-2 bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600"
+                        >
+                            Обновить данные
+                        </button>
+                    )}
+
+                    {isDataProcessed && (
+                        <button
+                            onClick={clearAllData}
+                            className="px-4 py-2 bg-red-500 text-white rounded cursor-pointer hover:bg-red-600"
+                        >
+                            Очистить все данные
+                        </button>
+                    )}
+                </div>
             </div>
 
             {isDataProcessed && (
