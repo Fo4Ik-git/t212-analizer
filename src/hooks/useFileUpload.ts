@@ -1,5 +1,6 @@
 import {useState, useCallback, useEffect} from 'react';
 import {CACHE_KEYS} from '@/config/config';
+import config from '@/config/config.json';
 
 export interface FileData {
     name: string;
@@ -112,6 +113,7 @@ export function useFileUpload() {
     }, [filesByYear, combineAllFilesByYear]);
 
     const saveToLocalStorage = useCallback(() => {
+        if (!config.global.isSaveDataInLocalStorage) return;
         try {
             // Сохраняем базовые метаданные файлов без полных данных
             const metadataToSave = Object.keys(filesByYear).reduce((acc, year) => {
@@ -131,6 +133,7 @@ export function useFileUpload() {
     }, [filesByYear, combinedData, selectedYear]);
 
     useEffect(() => {
+        if (!config.global.isSaveDataInLocalStorage) return;
         try {
             const savedFilesByYear = localStorage.getItem(CACHE_KEYS.FILES_BY_YEAR);
             const savedCombinedData = localStorage.getItem(CACHE_KEYS.COMBINED_DATA);

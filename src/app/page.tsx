@@ -9,6 +9,7 @@ import {Portfolio} from '@/types/trading212';
 import {parseCSVData} from '@/services/dataParser';
 import Test from '@/app/components/UI/Test/Test';
 import {useFileUpload} from '@/hooks/useFileUpload';
+import config from '@/config/config.json';
 
 export default function Home() {
     const [csvData, setCsvData] = useState<string[][]>([]);
@@ -32,19 +33,21 @@ export default function Home() {
             const adminFlag = localStorage.getItem('isAdmin') === 'true';
             setIsAdmin(adminFlag);
 
-            // Загрузка обработанных данных
-            const savedCsvData = localStorage.getItem(CACHE_KEYS.CSV_DATA);
-            const savedPortfolio = localStorage.getItem(CACHE_KEYS.PORTFOLIO);
-            const savedIsDataProcessed = localStorage.getItem(CACHE_KEYS.IS_DATA_PROCESSED);
+            if (config.global.isSaveDataInLocalStorage) {
+                // Загрузка обработанных данных
+                const savedCsvData = localStorage.getItem(CACHE_KEYS.CSV_DATA);
+                const savedPortfolio = localStorage.getItem(CACHE_KEYS.PORTFOLIO);
+                const savedIsDataProcessed = localStorage.getItem(CACHE_KEYS.IS_DATA_PROCESSED);
 
-            if (savedCsvData) {
-                setCsvData(JSON.parse(savedCsvData));
-            }
-            if (savedPortfolio) {
-                setPortfolio(JSON.parse(savedPortfolio));
-            }
-            if (savedIsDataProcessed === 'true') {
-                setIsDataProcessed(true);
+                if (savedCsvData) {
+                    setCsvData(JSON.parse(savedCsvData));
+                }
+                if (savedPortfolio) {
+                    setPortfolio(JSON.parse(savedPortfolio));
+                }
+                if (savedIsDataProcessed === 'true') {
+                    setIsDataProcessed(true);
+                }
             }
         } catch (error) {
             console.error('Ошибка при загрузке данных:', error);
@@ -192,7 +195,7 @@ export default function Home() {
 
     return (
         <div className="p-4 mx-auto">
-            <h1 className="text-2xl font-bold mb-4">CSV Анализатор</h1>
+            <h1 className="text-2xl font-bold mb-4">T212 Analizer and Tax counter in Poland</h1>
 
             <div className="mb-4">
                 {/* Выбор года */}

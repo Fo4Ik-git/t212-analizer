@@ -1,10 +1,9 @@
 {
   "name": "t212-analizer",
   "homepage": "https://fo4ik-git.github.io/t212-analizer",
-  "version": "0.1.0",
-  "private": false,
   "scripts": {
     "dev": "next dev --turbopack",
+    "prebuild": "node ./src/scripts/increment-version.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

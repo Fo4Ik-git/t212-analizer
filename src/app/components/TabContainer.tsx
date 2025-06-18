@@ -1,8 +1,9 @@
 'use client';
 
-import {ReactNode, useEffect} from 'react';
+import {ReactNode, useEffect, useState} from 'react';
 import {useRouter, usePathname, useSearchParams} from 'next/navigation';
 import Button, {ButtonVariant} from '@/app/components/Button';
+
 export type Tab = {
     id: string;
     label: string;
@@ -13,57 +14,71 @@ export type Tab = {
 interface TabContainerProps {
     tabs: Tab[];
     tabClassName?: string;
+    defaultActiveTab?: string;
 }
 
-export default function TabContainer({tabs, tabClassName = ''}: TabContainerProps) {
+export default function TabContainer({tabs, tabClassName = '', defaultActiveTab = 'table'}: TabContainerProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const tabParam = searchParams.get('tab');
 
     // Определяем активную вкладку из параметров URL или используем первую
-    const activeTabId = tabs.some(tab => tab.id === tabParam) ? tabParam : tabs[0].id;
+    const [activeTabId, setActiveTabId] = useState<string>('');
 
-    // Обновление URL при отсутствии параметра tab
+    // При первом рендере или изменении списка вкладок устанавливаем активную вкладку
     useEffect(() => {
-        if (!tabParam) {
-            const params = new URLSearchParams(searchParams);
-            if (activeTabId != null) {
-                params.set('tab', activeTabId);
+        if (tabs.length > 0) {
+            // Используем defaultActiveTab, если он предоставлен и существует в списке вкладок
+            if (defaultActiveTab && tabs.some(tab => tab.id === defaultActiveTab)) {
+                setActiveTabId(defaultActiveTab);
             } else {
-                params.set('tab', tabs[0].id);
+                // Иначе используем первую вкладку
+                setActiveTabId(tabs[0].id);
             }
-            router.replace(`${pathname}?${params.toString()}`);
         }
-    }, [tabParam, activeTabId, pathname, router, searchParams, tabs]);
+    }, [tabs, defaultActiveTab]);
 
-    // Обработчик переключения вкладок
-    const handleTabChange = (tabId: string) => {
-        const params = new URLSearchParams(searchParams);
-        params.set('tab', tabId);
-        router.push(`${pathname}?${params.toString()}`);
+    // Функция для переключения вкладок
+    const handleTabClick = (tabId: string) => {
+        setActiveTabId(tabId);
+
+        // Сохраняем активную вкладку в localStorage, чтобы сохранить её между перезагрузками
+        try {
+            localStorage.setItem('activeTabId', tabId);
+        } catch (error) {
+            console.error('Ошибка при сохранении активной вкладки:', error);
+        }
     };
+
+    // Находим активную вкладку
+    const activeTab = tabs.find(tab => tab.id === activeTabId);
 
     return (
         <div className="w-full">
-            <div className="flex space-x-2 mb-6 border-b overflow-x-auto">
+            {/* Заголовки вкладок */}
+            <div className="flex w-full border-b border-gray-200 mb-4">
                 {tabs.map(tab => (
-                    <Button
-                        variant={ButtonVariant.Tab}
+                    <button
                         key={tab.id}
-                        onClick={() => handleTabChange(tab.id)}
-                        className={`px-4 py-2 font-medium whitespace-nowrap ${
-                            activeTabId === tab.id
-                                ? 'text-primary border-b-2 border-primary'
-                                : 'text-muted-foreground hover:text-foreground'
-                        } ${tabClassName} ${tab.className || ''}`}
+                        className={`flex px-4 py-2 font-medium ${
+                            tab.id === activeTabId
+                                ? 'border-b-2 border-blue-500 text-blue-500'
+                                : 'text-gray-500 hover:text-gray-700 hover:cursor-pointer'
+                        }`}
+                        onClick={() => handleTabClick(tab.id)}
                     >
                         {tab.label}
-                    </Button>
+                    </button>
                 ))}
             </div>
 
-            {tabs.find(tab => tab.id === activeTabId)?.component}
+            {/* Содержимое активной вкладки */}
+            {activeTab && (
+                <div className={activeTab.className || ''}>
+                    {activeTab.component}
+                </div>
+            )}
         </div>
     );
 }
