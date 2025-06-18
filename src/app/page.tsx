@@ -106,8 +106,14 @@ export default function Home() {
 
                         // Объединяем результаты
                         Object.keys(filePortfolio).forEach(key => {
-                            if (Array.isArray(combinedPortfolio[key]) && Array.isArray(filePortfolio[key])) {
-                                combinedPortfolio[key].push(...filePortfolio[key]);
+                            // Проверяем, что ключ действительно есть в Portfolio
+                            if (key in combinedPortfolio) {
+                                const typedKey = key as keyof Portfolio;
+                                // Проверяем, что оба значения - массивы
+                                if (Array.isArray(combinedPortfolio[typedKey]) && Array.isArray(filePortfolio[typedKey])) {
+                                    // Приводим типы для безопасного push
+                                    (combinedPortfolio[typedKey] as any[]).push(...(filePortfolio[typedKey] as any[]));
+                                }
                             }
                         });
 
