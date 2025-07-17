@@ -45,10 +45,10 @@ export function Tooltip({ children, content, className = '' }: TooltipProps) {
 
   const getTooltipStyles = () => {
     if (!containerRef.current) return {};
-    
+
     const viewportWidth = window.innerWidth;
     const containerRect = containerRef.current.getBoundingClientRect();
-    
+
     let maxWidth = 400; // Базовая максимальная ширина
 
     if (position.left) {
