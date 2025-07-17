@@ -1,7 +1,7 @@
 {
   "versions": {
     "status": "Beta",
-    "version": "0.0.30"
+    "version": "0.0.33"
   },
   "global": {
     "isSaveDataInLocalStorage": true
